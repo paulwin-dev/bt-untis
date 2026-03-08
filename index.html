@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Better Untis Web</title>
+
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ffffff">
+
+    <link rel="stylesheet" href="./css/root.css">
+    <link rel="stylesheet" href="./css/notifications.css">
+    <link rel="stylesheet" href="./css/login.css">
+    <link rel="stylesheet" href="./css/schedule.css">
+    <link rel="stylesheet" href="./css/installer.css">
+</head>
+<body>
+    <div id="notifications-screen">
+        <template id="notification-template">
+            <div class="notification">
+                <h1 class="notification-text">Failed to log in!</h1>
+            </div>
+        </template>
+    </div>
+
+    
+    <div id="install-screen" hidden>
+        <div id="install-screen-container">
+            <h1>
+                Better<span style="color: var(--button);">Untis</span> 
+                is <span style="text-decoration: underline dotted; color: var(--muted-text);">better</span> 
+                in the app!</h1>
+
+            <button type="button" class="general-button" id="install-screen-button">Install Better Untis</button>
+
+            <hr>
+
+            <p id="install-screen-browser">Continue in Browser</p>
+        </div>
+    </div>
+
+    <div id="login-screen" hidden>
+        <div id="login-form">
+
+            <h1 id="login-header">Welcome back.</h1>
+            <p class="subtitle">Sign in with your Untis credentials.</p>
+
+            <div class="login-field">
+                <label>School URL</label>
+                <input type="text" id="login-server" placeholder="yourschool.webuntis.com" autocomplete="off" value="jfk-schule.webuntis.com">
+            </div>
+
+            <div class="login-field">
+                <label>School Name</label>
+                <input type="text" id="login-school" placeholder="" autocomplete="off" value="jfk-schule">
+            </div>
+
+            <div class="login-field">
+                <label>Username</label>
+                <input type="text" id="login-user" placeholder="Username" autocomplete="username">
+            </div>
+
+            <div class="login-field">
+                <label>Password</label>
+                <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password">
+            </div>
+
+            <button id="login-submit" class="general-button" type="button">Login</button>
+        </div>
+    </div>
+
+    <div id="app-screen">
+
+        <div id="schedule-screen">
+            <h1 id="schedule-user">WinterPau</h1>
+
+            <div id="schedule">
+                <div id="schedule-day-headers"></div>
+                <div id="schedule-grid"></div>
+            </div>
+
+            <div id="schedule-details" hidden>
+                <button id="schedule-details-close" class="close-button" type="button">✕</button>
+                <h1 id="schedule-details-header">Grundkurs Musik</h1>
+                <span id="schedule-details-status">Regular</span>
+                
+                <hr class="schedule-details-divider">
+                
+                <h3 class="schedule-details-section" id="schedule-details-nfs-header">Notes for Students</h3>
+                <p class="schedule-details-text" id="schedule-details-nfs">Some notes go here...</p>
+                
+                <h3 class="schedule-details-section">Homework</h3>
+                <div id="schedule-details-hw-container">
+                    <template id="schedule-details-hw-temp">
+                        <p class="schedule-details-text schedule-details-hw">Finish Part 1 of the worksheet</p>
+                        <button class="close-button delete-button" type="button"> 
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 6h18"/>
+                                <path d="M8 6V4h8v2"/>
+                                <rect x="5" y="6" width="14" height="16" rx="2"/>
+                                <path d="M10 11v6"/>
+                                <path d="M14 11v6"/>
+                            </svg>
+                        </button>
+                    </template>
+                </div>
+                <button type="button" class="general-button" id="schedule-details-add-hw">Add Homework</button>
+
+                <h3 class="schedule-details-section">Own Notes</h3>
+                <textarea class="schedule-details-text" id="schedule-details-own-notes" placeholder="Make a note to yourself..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./js/app.js"></script>
+</body>
+</html>

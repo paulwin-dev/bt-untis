@@ -1,0 +1,41 @@
+#install-screen {
+    position: fixed;
+
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--bg);
+
+    z-index: 3;
+
+    text-align: center;
+    display: flex;
+    align-items: center;
+}
+
+#install-screen[hidden] {
+    display: none;
+}
+
+#install-screen-container {
+    margin-left: 30px;
+    margin-right: 30px;
+}
+
+#install-screen-container h1 {
+    font-weight: 600;
+    font-size: 20pt;
+
+    width: 100%;
+
+    color: var(--muted-text);
+}
+
+#install-screen-container hr {
+    margin-top: 20px;
+}
+
+#install-screen-browser {
+    text-decoration: underline dashed;
+
+    cursor: pointer;
+}

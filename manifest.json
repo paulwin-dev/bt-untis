@@ -1,0 +1,28 @@
+{
+	"name": "Better Untis",
+	"short_name": "Better Untis",
+	"start_url": "/",
+	"display": "standalone",
+	"background_color": "#ffffff",
+	"theme_color": "#ffffff",
+	"icons": [
+		{
+			"purpose": "maskable any",
+			"sizes": "72x72",
+			"src": "/assets/maskable_icon_x72.png",
+			"type": "image/png"
+		},
+		{
+			"purpose": "maskable any",
+			"sizes": "192x192",
+			"src": "/assets/maskable_icon_x192.png",
+			"type": "image/png"
+		},
+		{
+			"purpose": "maskable any",
+			"sizes": "512x512",
+			"src": "/assets/maskable_icon_x512.png",
+			"type": "image/png"
+		}
+	]
+}

@@ -1,0 +1,44 @@
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+#notifications-screen {
+    width: 100%;
+    height: fit-content;
+
+    position: absolute;
+
+    z-index: 1000;
+
+    margin: 0;
+    margin-top: 10px;
+    padding: 0;
+
+    pointer-events: none;
+}
+
+.notification {
+    padding: none;
+
+    text-align: center;
+
+    width: fit-content;
+    margin: 0 auto;
+    margin-bottom: 5px;
+    padding: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+
+    border-radius: 100px;
+
+    animation: fadeIn 0.3s ease;
+}
+
+.notification-text {
+    margin: 0;
+
+    color: white;
+    font-size: 15pt;
+    font-weight: normal;
+}
