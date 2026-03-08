@@ -16,7 +16,7 @@ export function openDB(name, version, { upgrade } = {}) {
 
         req.onupgradeneeded = e => {
             try {
-                upgrade?.(wrap(e.target.result));
+                upgrade?.(e.target.result, e.oldVersion);  // pass raw db + oldVersion
             } catch (err) {
                 reject(err);
             }
@@ -46,13 +46,11 @@ function wrap(idbDatabase) {
         getAll(storeName) {
             return tx(idbDatabase, storeName, 'readonly', s => s.getAll());
         },
-        // expose raw db in case you ever need it
-        _raw: idbDatabase,
-
-        // mirror IDBDatabase.createObjectStore for use inside upgrade()
         createObjectStore(name, options) {
             return idbDatabase.createObjectStore(name, options);
         },
+        objectStoreNames: idbDatabase.objectStoreNames,  // add this
+        _raw: idbDatabase,
     };
 }
 
