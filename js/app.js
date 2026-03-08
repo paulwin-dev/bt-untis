@@ -17,5 +17,4 @@ let session = await untis.restoreSession()
 if (!session) {
     session = await login.startLoginProcess();
 }
-
 schedule.load(session)

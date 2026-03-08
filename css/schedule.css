@@ -292,6 +292,7 @@
     font-size: 1em;
 
     color: var(--text);
+    background-color: transparent;
     border: none;
     outline: none;
 }

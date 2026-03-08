@@ -21,6 +21,28 @@
     --header-font: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif
 }
 
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: rgb(15, 15, 15);
+        --divider: #2a2a2a;
+
+        --surface: rgb(50, 65, 80);
+        --green-bg: rgb(40, 160, 70);
+        --border: #2a2a2a;
+
+        --text: rgb(255, 255, 255);
+        --surface-text: rgb(255, 255, 255);
+        --muted-text: rgb(160, 160, 160);
+
+        --button: rgb(255, 80, 32);
+        --button-hover: rgb(255, 139, 107);
+        
+        --error: rgb(255, 84, 41);
+        --success: rgb(40, 200, 80);
+        --info: rgb(95, 152, 250);
+    }
+}
+
 * {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: var(--text);

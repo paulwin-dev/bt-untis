@@ -575,6 +575,16 @@ export async function getGrades(session) {
 	}));
 }
 
+export function getNameFromToken(session) {
+    if (!session.bearerToken) return null
+    try {
+        const payload = JSON.parse(atob(session.bearerToken.split('.')[1]))
+        return payload.username ?? payload.sub ?? null
+    } catch {
+        return null
+    }
+}
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Session persistence

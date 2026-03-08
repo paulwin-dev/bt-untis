@@ -216,6 +216,10 @@ async function loadWeek(session, weekOffset, direction = 0) {
 
 export async function load(_session) {
 	session = _session
+
+	const studentName = untis.getNameFromToken(session)
+	document.querySelector("#schedule-user").textContent = studentName ?? "?"
+
 	await loadWeek(session, 0)
 }
 
