@@ -14,7 +14,7 @@ if ("serviceWorker" in navigator) {
 
 await storage.init()
 
-let session = await untis.restoreSession()
+let session = await login.restoreSession()
 
 if (!session && !navigator.onLine) {
 	notifications.notify("You're offline — showing cached data", "info")

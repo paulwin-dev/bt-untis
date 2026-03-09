@@ -592,7 +592,7 @@ export function getNameFromToken(session) {
 
 const STORAGE_KEY = 'webuntis_session';
 
-export function saveSession(session) {
+export function saveSession(session, password = null) {
 	localStorage.setItem(STORAGE_KEY, JSON.stringify({
 		server: session.server,
 		school: session.school,
@@ -601,8 +601,19 @@ export function saveSession(session) {
 		personType: session.personType,
 		klasseId: session.klasseId,
 		username: session.username,
+		password: password
 		// bearer token is NOT saved — it expires and must be refreshed on restore
 	}));
+}
+
+export function getCachedSesion() {
+	const raw = localStorage.getItem(STORAGE_KEY);
+	if (!raw) return null;
+
+	let saved;
+	try { saved = JSON.parse(raw); } catch { return null; }
+
+	return saved
 }
 
 export async function restoreSession() {
@@ -610,13 +621,14 @@ export async function restoreSession() {
 	if (!raw) return null;
 
 	let saved;
-	try { saved = JSON.parse(raw); } catch { clearSession(); return null; }
+	//try { saved = JSON.parse(raw); } catch { clearSession(); return null; }
+	try { saved = JSON.parse(raw); } catch { return null; }
 
 	// Verify JSESSIONID is still alive
 	try {
 		await rpc(saved, 'getLatestImportTime');
 	} catch {
-		clearSession();
+		//clearSession();
 		return null;
 	}
 

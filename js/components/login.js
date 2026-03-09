@@ -7,8 +7,25 @@ const schoolInput = document.getElementById("login-school")
 const userInput = document.getElementById("login-user")
 const passInput = document.getElementById("login-pass")
 const loginButton = document.getElementById("login-submit")
+const rememberLoginCheck = document.getElementById("login-remember-check")
 
 let resolveLogin = null;
+
+export async function restoreSession() {
+    const savedSession = untis.getCachedSesion()
+    let session = await untis.restoreSession()
+    if (session) {
+        return session
+    }
+
+    if (localStorage.getItem("remember_login") != "true" || !savedSession || !savedSession.password) {
+        return null
+    }
+
+    console.log("Logging in with saved credentials because remember me is set to true.")
+
+    return await untis.login(savedSession.server, savedSession.school, savedSession.username, savedSession.password)
+}
 
 export function startLoginProcess() {
     loginScreen.hidden = false
@@ -18,8 +35,14 @@ export function startLoginProcess() {
     });
 }
 
-function login(session) {
-    untis.saveSession(session);
+function login(session, password) {
+    if (rememberLoginCheck.checked) {
+        localStorage.setItem("remember_login", "true")
+    }
+
+    const rememberLogin = localStorage.getItem("remember_login") == "true"
+
+    untis.saveSession(session, rememberLogin ? password : null);
     loginScreen.hidden = true
     resolveLogin(session);
 
@@ -42,7 +65,7 @@ async function onSubmit() {
             passInput.value,
         );
 
-        login(session)
+        login(session, passInput.value)
 
     } catch {
         notifications.notify("Login failed. Check your credentials.", "error")

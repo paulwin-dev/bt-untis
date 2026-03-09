@@ -1,5 +1,7 @@
 const CACHE = "untis-v3";
 
+let useOffline = false //set from outside from the loader
+
 self.addEventListener("install", e => {
     self.skipWaiting();
 });
