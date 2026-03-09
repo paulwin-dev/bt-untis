@@ -6,7 +6,6 @@
     <title>Better Untis Web</title>
 
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#ffffff">
 
     <link rel="stylesheet" href="./css/root.css">
     <link rel="stylesheet" href="./css/notifications.css">
@@ -18,7 +17,7 @@
     <div id="notifications-screen">
         <template id="notification-template">
             <div class="notification">
-                <h1 class="notification-text">Failed to log in!</h1>
+                <h1 class="notification-text"></h1>
             </div>
         </template>
     </div>
@@ -76,6 +75,7 @@
 
             <div id="schedule">
                 <div id="schedule-day-headers"></div>
+                <div id="schedule-time-indicator" hidden></div>
                 <div id="schedule-grid"></div>
             </div>
 

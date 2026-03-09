@@ -5,6 +5,9 @@ import * as notifications from "./notifications.js"
 const PREFETCH_BEFORE_WEEKS = 3
 const PREFETCH_AFTER_WEEKS = 5
 
+const CUSTOM_DATA_ICON = `<svg class="note-indicator" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>`
+const TEACHER_NOTE_ICON = `<svg class="note-indicator" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8"/><line x1="12" y1="12" x2="12" y2="16"/></svg>`
+
 let session;
 let scheduleDefinition;
 let curDetailsData;
@@ -23,12 +26,34 @@ function isToday(date) {
            date.getDate()     === t.getDate();
 }
 
+function intToMinutes(t) {
+    const h = Math.floor(t / 100)
+    const m = t % 100
+    return h * 60 + m
+}
+
+function getWeekKey(weekOffset) {
+    const monday = untis.addDays(untis.getMonday(), weekOffset * 7)
+    return `${monday.getFullYear()}-${String(monday.getMonth()+1).padStart(2,'0')}-${String(monday.getDate()).padStart(2,'0')}`
+}
+
+function offlineCacheWeek(weekOffset, week) {
+    const weekKey = getWeekKey(weekOffset)
+    storage.saveWeekCache(weekKey, week)
+}
+
+function inMemoryCacheWeek(weekOffset, week) {
+    weekCache.set(weekOffset, week)
+}
+
 async function prefetchWeeks(start, before, after) {
 	for (let i = (start - before); i < (start + after); i++) {
 		if (weekCache.has(i)) continue;
 
 		const { periods, dayStatuses } = await untis.getTimetable(session, i)
-		weekCache.set(i, { periods, dayStatuses })
+        const data = { periods, dayStatuses }
+		weekCache.set(i, data)
+        offlineCacheWeek(i, data)
 	}
 }
 
@@ -68,7 +93,6 @@ async function openDetailsPanel(period, dateKey) {
 	details.querySelector("#schedule-details-own-notes").value = customData.note?.length > 0 ? customData.note : ""
 }
 
-
 async function closeDetailsPanel() {
 	history.back()
 	details.hidden = true
@@ -84,7 +108,111 @@ async function closeDetailsPanel() {
 	notifications.notify("Saved new note.", "info")
 }
 
-async function loadWeek(session, weekOffset, direction = 0) {
+async function updateStudentName() {
+    let studentName = null
+    if (session) {
+        studentName = untis.getNameFromToken(session)
+        if (studentName) await storage.saveStudentName(studentName)
+    } else {
+        studentName = await storage.loadStudentName()
+    }
+    document.querySelector("#schedule-user").textContent = studentName ?? "?"
+}
+
+async function attemptLoadScheduleDefinition() {
+    if (session && navigator.onLine) {
+        try {
+            scheduleDefinition = await untis.getTimetableDefinition(session)
+            await storage.saveDefinition(scheduleDefinition)
+        } catch {
+            scheduleDefinition = await storage.loadDefinition()
+        }
+    } else {
+        scheduleDefinition = await storage.loadDefinition()
+    }
+}
+
+async function attemptLoadWeek(weekOffset) {
+    if (weekCache.has(weekOffset)) {
+        return weekCache.get(weekOffset)
+    }
+
+    const weekKey = getWeekKey(weekOffset)
+
+    if (!session || !navigator.onLine) {
+        const saved = await storage.loadWeekCache(weekKey)
+        inMemoryCacheWeek(weekOffset, saved)
+
+        return saved
+    }
+
+    //we have both a session and we're online -> fetch new data
+    try {
+        const { periods, dayStatuses } = await untis.getTimetable(session, weekOffset)
+        inMemoryCacheWeek(weekOffset, { periods, dayStatuses })
+        offlineCacheWeek(weekOffset, { periods, dayStatuses })
+
+        return { periods, dayStatuses }
+    } catch (error) {
+        console.log(error)
+        return {}
+    }
+}
+
+function updateTimeIndicator() {
+    const indicator = document.getElementById('schedule-time-indicator')
+    const grid = document.getElementById('schedule-grid')
+    if (!scheduleDefinition || currentWeek !== 0) {
+        indicator.hidden = true
+        return
+    }
+
+    const now = new Date()
+    const nowM = now.getHours() * 60 + now.getMinutes()
+    const slots = scheduleDefinition.slots
+    const first = intToMinutes(slots[0].startInt)
+    const last  = intToMinutes(slots[slots.length - 1].endInt)
+
+    if (nowM < first || nowM > last) {
+        indicator.hidden = true
+        return
+    }
+
+    // find which slot we're currently in
+    const slotIndex = slots.findIndex(s =>
+        nowM >= intToMinutes(s.startInt) && nowM <= intToMinutes(s.endInt)
+    )
+
+    // if between slots, snap to next slot start
+    const targetIndex = slotIndex === -1
+        ? slots.findIndex(s => intToMinutes(s.startInt) > nowM)
+        : slotIndex
+
+    // get the actual DOM cell for this slot (first column, row = targetIndex + 1)
+    const cells = grid.querySelectorAll('.schedule-cell, .free')
+    // cells are laid out row by row, so nth cell in first column = targetIndex * 5
+    // easier: use getBoundingClientRect on the grid itself and calculate from slot position
+    const rowHeight = 65 // match your grid-auto-rows
+    const gap = 4        // match your gap
+
+    let top = 0
+    for (let i = 0; i < targetIndex; i++) {
+        top += rowHeight + gap
+    }
+
+    if (slotIndex !== -1) {
+        // interpolate within the slot
+        const slotStart = intToMinutes(slots[slotIndex].startInt)
+        const slotEnd   = intToMinutes(slots[slotIndex].endInt)
+        const withinSlot = (nowM - slotStart) / (slotEnd - slotStart)
+        top += withinSlot * rowHeight
+    }
+
+    indicator.hidden = false
+    indicator.style.top = `${grid.offsetTop + top}px`
+}
+
+async function loadWeek(weekOffset, direction = 0) {
     currentWeek = weekOffset
 
     if (direction !== 0) {
@@ -101,46 +229,21 @@ async function loadWeek(session, weekOffset, direction = 0) {
         }
     }
 
-    const definition = scheduleDefinition
-    if (!definition) {
+    function errorOut(errMessage) {
         notifications.notify("No offline data available", "error")
         finishAnimation()
-        throw new Error('no definition')
+        throw new Error(errMessage)
     }
 
-    let periods
-    let dayStatuses
+    const definition = scheduleDefinition
+    if (!definition) {
+        errorOut("No definition found!")
+    }
 
-    if (weekCache.has(weekOffset)) {
-        ({ periods, dayStatuses } = weekCache.get(weekOffset));
-    } else {
-        // try IndexedDB first
-        const cached = await storage.loadWeekCache(weekOffset)
-        if (cached) {
-            periods     = cached.periods
-            dayStatuses = cached.dayStatuses
-            weekCache.set(weekOffset, { periods, dayStatuses })
-        }
-
-        // fetch fresh data if online and have a session
-        if (session && navigator.onLine) {
-            try {
-                ({ periods, dayStatuses } = await untis.getTimetable(session, weekOffset));
-                weekCache.set(weekOffset, { periods, dayStatuses });
-                await storage.saveWeekCache(weekOffset, { periods, dayStatuses })
-            } catch (e) {
-                if (!cached) {
-                    notifications.notify("Failed to load timetable", "error")
-                    finishAnimation()
-                    throw new Error('failed to load')
-                }
-                // fall through using cached data
-            }
-        } else if (!cached) {
-            notifications.notify("No offline data for this week", "error")
-            finishAnimation()
-            throw new Error('no cached data')
-        }
+    let { periods, dayStatuses } = await attemptLoadWeek(weekOffset)
+    
+    if (!periods || !dayStatuses) {
+        errorOut("Unable to load week.")
     }
 
     const byDay = untis.groupByDay(periods)
@@ -174,7 +277,6 @@ async function loadWeek(session, weekOffset, direction = 0) {
             const dayDate = untis.addDays(monday, day)
             const dateKey = getDateKey(dayDate)
             const dayMeta = dayStatuses[dateKey]
-            const isPast = dayDate < new Date() && !isToday(dayDate)
 
             const isHoliday = dayMeta?.backEntries?.some(e => e.type == "HOLIDAY")
             if (isHoliday) {
@@ -189,6 +291,11 @@ async function loadWeek(session, weekOffset, direction = 0) {
             }
 
             const period = byDay[day].find(p => p.startTime === slot.startInt);
+
+            const now = new Date()
+            const currentTimeInt = now.getHours() * 100 + now.getMinutes()
+            const isPast = (dayDate < now && !isToday(dayDate)) ||
+               (isToday(dayDate) && period && period.endTime < currentTimeInt)
 
             let span = 1;
             if (period) {
@@ -235,62 +342,50 @@ async function loadWeek(session, weekOffset, direction = 0) {
 
     finishAnimation()
     prefetchWeeks(weekOffset, PREFETCH_BEFORE_WEEKS, PREFETCH_AFTER_WEEKS)
+
+    document.getElementById('schedule-time-indicator').hidden = currentWeek != 0
+}
+
+function doSwipeDetection() {
+    let touchStartX = 0
+    let weekOffset = 0
+
+    grid.addEventListener('touchstart', e => {
+        touchStartX = e.touches[0].clientX
+    }, { passive: true })
+
+    grid.addEventListener('touchend', e => {
+        const diff = touchStartX - e.changedTouches[0].clientX
+        if (Math.abs(diff) < 50) return
+
+        const prevOffset = weekOffset
+        if (diff > 0) weekOffset++
+        else weekOffset--
+
+        loadWeek(weekOffset, diff).catch(() => {
+            weekOffset = prevOffset
+        })
+    })
 }
 
 export async function load(_session) {
     session = _session
 
-    // student name
-    let studentName = null
-    if (session) {
-        studentName = untis.getNameFromToken(session)
-        if (studentName) await storage.saveStudentName(studentName)
-    } else {
-        studentName = await storage.loadStudentName()
-    }
-    document.querySelector("#schedule-user").textContent = studentName ?? "?"
+    updateStudentName()
+    await attemptLoadScheduleDefinition()
 
-    // definition
-    if (session && navigator.onLine) {
-        try {
-            scheduleDefinition = await untis.getTimetableDefinition(session)
-            await storage.saveDefinition(scheduleDefinition)
-        } catch {
-            scheduleDefinition = await storage.loadDefinition()
-        }
-    } else {
-        scheduleDefinition = await storage.loadDefinition()
-    }
 
-    await loadWeek(session, 0)
+
+    await loadWeek(0)
+
+    updateTimeIndicator()
+    setInterval(updateTimeIndicator, 60000)
+
+    doSwipeDetection()
 }
 
 details.querySelector(".close-button").addEventListener("click", closeDetailsPanel)
 
-//swipe to switch weeks
-let touchStartX = 0
-let weekOffset = 0
-
-grid.addEventListener('touchstart', e => {
-    touchStartX = e.touches[0].clientX
-}, { passive: true })
-
-grid.addEventListener('touchend', e => {
-    const diff = touchStartX - e.changedTouches[0].clientX
-    if (Math.abs(diff) < 50) return
-    
-    const prevOffset = weekOffset
-    if (diff > 0) weekOffset++
-    else weekOffset--
-    
-    loadWeek(session, weekOffset, diff).catch(() => {
-        weekOffset = prevOffset  // revert to previous offset
-    })
-})
-
 window.addEventListener('popstate', e => {
     //empty for now, adds support for back button
 })
-
-const CUSTOM_DATA_ICON = `<svg class="note-indicator" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>`
-const TEACHER_NOTE_ICON = `<svg class="note-indicator" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8"/><line x1="12" y1="12" x2="12" y2="16"/></svg>`

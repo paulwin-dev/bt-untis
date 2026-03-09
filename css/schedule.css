@@ -63,6 +63,16 @@
     margin: 0 auto;
 }
 
+#schedule-time-indicator {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--button);
+    z-index: 10;
+    pointer-events: none;
+}
+
 #schedule-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);

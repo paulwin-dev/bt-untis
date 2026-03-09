@@ -3,8 +3,6 @@
 	"short_name": "Better Untis",
 	"start_url": "/",
 	"display": "standalone",
-	"background_color": "#ffffff",
-	"theme_color": "#ffffff",
 	"icons": [
 		{
 			"purpose": "maskable any",
