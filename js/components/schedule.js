@@ -7,6 +7,7 @@ const PREFETCH_AFTER_WEEKS = 5
 
 const CUSTOM_DATA_ICON = `<svg class="note-indicator" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>`
 const TEACHER_NOTE_ICON = `<svg class="note-indicator" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8"/><line x1="12" y1="12" x2="12" y2="16"/></svg>`
+const HOMEWORK_ICON = `<svg class="note-indicator" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`
 
 let session;
 let scheduleDefinition;
@@ -66,6 +67,36 @@ function removeLevelFromCourseName(courseName) {
 	return courseName.replace("GK", "").replace("AP", "").replace("Grundkurs", "").replace("Leistungskurs", "")
 }
 
+function createHomeworkItem(text, completed, apiId, fromTeacher) {
+    const item = detailsHwTemplate.content.cloneNode(true).firstElementChild
+    item.dataset.apiId = apiId ?? ""
+
+    const label = item.querySelector("p")
+    label.textContent = text
+    if (completed) label.style.textDecoration = "line-through"
+
+    const completeBtn = item.querySelector(".complete-homework-button")
+    if (completed) completeBtn.classList.add("completed")
+    completeBtn.addEventListener("click", async () => {
+        const isCompleted = completeBtn.classList.toggle("completed")
+        label.style.textDecoration = isCompleted ? "line-through" : ""
+        if (apiId) {
+            await storage.setHomeworkCompleted(apiId, isCompleted)
+        }
+    })
+
+    const deleteBtn = item.querySelector(".delete-button")
+
+    if (fromTeacher) {
+        deleteBtn.remove()
+    } else {
+        const deleteBtn = item.querySelector(".delete-button")
+        deleteBtn.addEventListener("click", () => item.remove())
+    }
+
+    return item
+}
+
 async function openDetailsPanel(period, dateKey) {
 	const customData = await storage.getCustomPeriodData(dateKey, period.startTime) ?? {}
 	curDetailsData = { period, dateKey, customData }
@@ -91,21 +122,42 @@ async function openDetailsPanel(period, dateKey) {
 
 	//note for self
 	details.querySelector("#schedule-details-own-notes").value = customData.note?.length > 0 ? customData.note : ""
+
+    //homework
+    const hwList = details.querySelector("#schedule-details-hw-list")
+    hwList.textContent = ""
+
+    const completedHomework = await storage.getCompletedHomework()
+    let homeworks
+
+    if (session && navigator.onLine) {
+        ({ homeworks } = await untis.getPeriodDetails(session, period) ?? [])
+        storage.saveHomeworkCache(period.date, period.startTime, homeworks)
+    } else {
+        homeworks = await storage.loadHomeworkCache(period.date, period.startTime)
+        if (!homeworks) {
+            notifications.notify("Unable to load homework — check your internet connection.")
+        }
+        homeworks = homeworks ?? []
+    }
+
+    for (const hw of homeworks) {
+        hwList.appendChild(createHomeworkItem(hw.text, completedHomework[hw.id] ?? hw.completed, hw.id, true))
+    }
 }
 
 async function closeDetailsPanel() {
-	history.back()
-	details.hidden = true
+    details.hidden = true
 
-	if (!curDetailsData) return;
+    if (!curDetailsData) return;
 
-	const { period, dateKey, customData } = curDetailsData
-	const notesText = details.querySelector("#schedule-details-own-notes").value
-	if (notesText === customData.note) return
-	if (notesText === "" && !customData?.note) return;
+    const { period, dateKey, customData } = curDetailsData
+    const notesText = details.querySelector("#schedule-details-own-notes").value
+    if (notesText === customData.note) return
+    if (notesText === "" && !customData?.note) return;
 
-	await storage.putCustomPeriodData(curDetailsData.homework, notesText, dateKey, period.startTime)
-	notifications.notify("Saved new note.", "info")
+    await storage.putCustomPeriodData(curDetailsData.homework, notesText, dateKey, period.startTime)
+    notifications.notify("Saved new note.", "info")
 }
 
 async function updateStudentName() {
@@ -315,7 +367,8 @@ async function loadWeek(weekOffset, direction = 0) {
 
             if (period) {
                 const customData = await storage.getCustomPeriodData(dateKey, period.startTime)
-                if (customData?.homework?.length > 0) cell.classList.add("homework")
+                const hasHomework = customData?.homework?.length > 0 || period.hasHomework
+                if (hasHomework) cell.classList.add("homework")
 
                 const courseName = removeLevelFromCourseName(period.subject?.longname ?? "")
                 cell.classList.add(period.status)
@@ -329,6 +382,7 @@ async function loadWeek(weekOffset, direction = 0) {
                     <div class="cell-indicators">
                         ${customData?.note?.length > 0 ? CUSTOM_DATA_ICON : ''}
                         ${period.notes?.length > 0 ? TEACHER_NOTE_ICON : ''}
+                        ${hasHomework ? HOMEWORK_ICON : ''}
                     </div>
                 `
                 cell.addEventListener("click", () => openDetailsPanel(period, dateKey))
@@ -343,7 +397,7 @@ async function loadWeek(weekOffset, direction = 0) {
     finishAnimation()
     prefetchWeeks(weekOffset, PREFETCH_BEFORE_WEEKS, PREFETCH_AFTER_WEEKS)
 
-    document.getElementById('schedule-time-indicator').hidden = currentWeek != 0
+    updateTimeIndicator()
 }
 
 function doSwipeDetection() {
@@ -374,8 +428,6 @@ export async function load(_session) {
     updateStudentName()
     await attemptLoadScheduleDefinition()
 
-
-
     await loadWeek(0)
 
     updateTimeIndicator()
@@ -384,8 +436,12 @@ export async function load(_session) {
     doSwipeDetection()
 }
 
-details.querySelector(".close-button").addEventListener("click", closeDetailsPanel)
+details.querySelector(".close-button").addEventListener("click", () => {
+    history.back() // triggers popstate which closes details panel
+})
 
 window.addEventListener('popstate', e => {
-    //empty for now, adds support for back button
+    if (!details.hidden) {
+        closeDetailsPanel()
+    }
 })

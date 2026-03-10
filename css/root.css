@@ -134,3 +134,52 @@ body, html {
     margin-top: 0;
     color: var(--muted-text);
 }
+
+
+#nav-bar {
+    position: absolute;
+    bottom: 0;
+
+    background-color: var(--bg);
+    border-top: 1px solid var(--border);
+    z-index: 3;
+    width: 100vw;
+    height: 55px;
+    display: flex;
+    align-items: center;
+}
+
+.nav-item {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted-text);
+
+    border-radius: 100px;
+
+    transition: background-color .3s;
+}
+
+.nav-item span {
+    font-size: 10px;
+    color: inherit;
+}
+
+.nav-item svg {
+    stroke: currentColor;
+}
+
+.nav-item:active {
+    background-color: var(--border);
+}
+
+.nav-item.active {
+    color: var(--button);
+}

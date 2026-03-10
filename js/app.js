@@ -14,9 +14,23 @@ if ("serviceWorker" in navigator) {
 
 await storage.init()
 
-let session = await login.restoreSession()
+let [ session ] = await login.restoreSession()
 
-if (!session && !navigator.onLine) {
+if (session) { //user is online and logged in, immediately show schedule
+	await schedule.load(session)
+
+} else if (navigator.onLine) { //user's session has expired and they're online: prompt login
+	session = await login.startLoginProcess()
+	await schedule.load(session)
+
+} else { //user offline
+	notifications.notify("Unable to connect to server — check your connection", "info")
+
+	await schedule.load(null)
+}
+
+
+/*if (!session && !navigator.onLine) {
 	notifications.notify("You're offline — showing cached data", "info")
 
 	await schedule.load(null)
@@ -25,4 +39,4 @@ if (!session && !navigator.onLine) {
 	await schedule.load(session)
 } else {
 	await schedule.load(session)
-}
+}*/

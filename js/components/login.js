@@ -11,20 +11,31 @@ const rememberLoginCheck = document.getElementById("login-remember-check")
 
 let resolveLogin = null;
 
+export async function getStayLoggedInValue() {
+    return localStorage.getItem("remember_login") == "true"
+}
+
 export async function restoreSession() {
-    const savedSession = untis.getCachedSesion()
-    let session = await untis.restoreSession()
+    let session
+
+    try { session = await untis.restoreSession() } catch {} //wrap in try catch to make sure that if the server is ever offline it still shows offline data
+
     if (session) {
-        return session
+        return [session]
     }
 
-    if (localStorage.getItem("remember_login") != "true" || !savedSession || !savedSession.password) {
-        return null
+    const savedSession = untis.getCachedSesion()
+    if (!getStayLoggedInValue() || !savedSession || !savedSession.password) {
+        return [null]
     }
 
     console.log("Logging in with saved credentials because remember me is set to true.")
 
-    return await untis.login(savedSession.server, savedSession.school, savedSession.username, savedSession.password)
+    try {
+        return [await untis.login(savedSession.server, savedSession.school, savedSession.username, savedSession.password)]
+    } catch {
+        return [null, true]
+    }
 }
 
 export function startLoginProcess() {

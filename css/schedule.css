@@ -1,6 +1,7 @@
 :root {
     --exam-color: rgb(254, 192, 72);
     --cancelled-color: rgb(236, 51, 51);
+    --homework-color: rgb(150, 100, 220);
 }
 
 #schedule-user {
@@ -151,7 +152,7 @@
 }
 
 .schedule-cell.homework {
-    background-color: var(--info);
+    background-color: var(--homework-color);
 }
 
 .schedule-cell.cancelled {
@@ -214,7 +215,7 @@
 #schedule-details {
     position: absolute;
     top: 0;
-    z-index: 9999;
+    z-index: 999;
 
     width: calc(100vw - 40px);
     height: 100vh;
@@ -255,23 +256,63 @@
     border-width: 1px;
 }
 
-#schedule-details-hw-container {
+#schedule-details-hw-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.schedule-details-hw-item {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 8px;
 }
 
-#schedule-details-hw-container .delete-button {
+.schedule-details-hw-item p {
+    flex: 1;
+    margin: 0;
+}
+
+.schedule-details-hw-item .delete-button {
     align-self: center;
     flex-shrink: 0;
 
-    margin-top: -1em;
+    height: 40px;
+    width: 40px;
 }
 
-.schedule-details-hw p {
-    flex: 1;
-    margin: 0;
+.schedule-details-hw-item .complete-homework-button {
+    background-color: transparent;
+    border-color: var(--border);
+    flex-shrink: 0;
+
+    height: 40px;
+    width: 40px;
+
+    border-width: 3px;
+}
+
+.complete-homework-button.completed {
+    background-color: var(--success);
+    border-color: var(--success);
+}
+
+.complete-homework-button svg {
+    margin-top: 4px;
+    margin-left: 2px;
+    stroke: var(--text);
+}
+.complete-homework-button.completed {
+    background-color: var(--success);
+    border-color: var(--success);
+}
+.complete-homework-button.completed svg {
+    stroke: white;
+}
+
+#schedule-details-add-hw {
+    margin-top: 10px;
 }
 
 .schedule-details-divider {

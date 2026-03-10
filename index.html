@@ -22,6 +22,40 @@
         </template>
     </div>
 
+    <div id="nav-bar">
+        <button class="nav-item active" data-tab="schedule">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                <line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/>
+                <line x1="16" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="8" y2="18"/>
+                <line x1="12" y1="18" x2="12" y2="18"/>
+            </svg>
+            <span>Schedule</span>
+        </button>
+        <button class="nav-item" data-tab="absences">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4"/>
+                <line x1="17" y1="17" x2="21" y2="21"/><line x1="21" y1="17" x2="17" y2="21"/>
+            </svg>
+            <span>Absences</span>
+        </button>
+        <button class="nav-item" data-tab="absences">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 22 8 12 14 2 8"/>
+                <path d="M6 11v4a5 4 0 0 0 12.5 0v-4"/>
+            </svg>
+            <span>Grades</span>
+        </button>
+        <button class="nav-item" data-tab="more">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="5" r="1" fill="currentColor"/>
+                <circle cx="12" cy="12" r="1" fill="currentColor"/>
+                <circle cx="12" cy="19" r="1" fill="currentColor"/>
+            </svg>
+            <span>More</span>
+        </button>
+    </div>
     
     <div id="install-screen" hidden>
         <div id="install-screen-container">
@@ -95,19 +129,24 @@
                 <p class="schedule-details-text" id="schedule-details-nfs">Some notes go here...</p>
                 
                 <h3 class="schedule-details-section">Homework</h3>
-                <div id="schedule-details-hw-container">
+                <div id="schedule-details-hw-list">
                     <template id="schedule-details-hw-temp">
-                        <p class="schedule-details-text schedule-details-hw">Finish Part 1 of the worksheet</p>
-                        <button class="close-button delete-button" type="button"> 
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M3 6h18"/>
-                                <path d="M8 6V4h8v2"/>
-                                <rect x="5" y="6" width="14" height="16" rx="2"/>
-                                <path d="M10 11v6"/>
-                                <path d="M14 11v6"/>
-                            </svg>
-                        </button>
-                    </template>
+                        <div class="schedule-details-hw-item">
+                            <p class="schedule-details-text schedule-details-hw">Finish Part 1 of the worksheet</p>
+                            <button class="close-button complete-homework-button" type="button">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="1 12 5 16 11 8"/><polyline points="9 12 13 16 19 8"/>
+                                </svg>
+                            </button>
+                            <button class="close-button delete-button" type="button">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 6h18"/><path d="M8 6V4h8v2"/>
+                                    <rect x="5" y="6" width="14" height="16" rx="2"/>
+                                    <path d="M10 11v6"/><path d="M14 11v6"/>
+                                </svg>
+                            </button>
+                        </div>
+                   </template>
                 </div>
                 <button type="button" class="general-button" id="schedule-details-add-hw">Add Homework</button>
 

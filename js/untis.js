@@ -284,6 +284,7 @@ function extractPosition(posArr) {
  * Parse a single gridEntry from the REST view API into a normalised Period.
  */
 function parseEntry(entry, dateObj) {
+		
 	const dow = dateObj.getDay();
 	const dayIndex = dow === 0 ? 6 : dow - 1;
 
@@ -303,6 +304,7 @@ function parseEntry(entry, dateObj) {
 	const isChanged = entry.status === 'CHANGED';
 	const isExam = entry.type === 'EXAM';
 	const notes = entry.notesAll
+	const hasHomework = entry.icons?.includes("HOMEWORK") ?? false
 
 	// For EVENTs the subject position often holds an INFO type with the event name
 	const displayName = subjectEntry?.longname ?? subjectEntry?.name ?? null;
@@ -336,7 +338,8 @@ function parseEntry(entry, dateObj) {
 		isCancelled,
 		isChanged,
 		hasRoomChange,
-		notes
+		notes,
+		hasHomework
 	};
 }
 
@@ -611,7 +614,7 @@ export function getCachedSesion() {
 	if (!raw) return null;
 
 	let saved;
-	try { saved = JSON.parse(raw); } catch { return null; }
+	try { saved = JSON.parse(raw) } catch { return null }
 
 	return saved
 }
@@ -641,4 +644,49 @@ export async function restoreSession() {
 /** Remove saved session from localStorage. */
 export function clearSession() {
 	localStorage.removeItem(STORAGE_KEY);
+}
+
+export async function getPeriodDetails(session, period) {
+    const fmt = dt => {
+        const yyyy = dt.getFullYear()
+        const mm   = String(dt.getMonth() + 1).padStart(2, '0')
+        const dd   = String(dt.getDate()).padStart(2, '0')
+        const hh   = String(dt.getHours()).padStart(2, '0')
+        const min  = String(dt.getMinutes()).padStart(2, '0')
+        return `${yyyy}-${mm}-${dd}T${hh}:${min}:00`
+    }
+
+    // reconstruct start/end Date objects from period
+    const startH = Math.floor(period.startTime / 100)
+    const startM = period.startTime % 100
+    const endH   = Math.floor(period.endTime / 100)
+    const endM   = period.endTime % 100
+
+    const startDate = new Date(period.dateObj)
+    startDate.setHours(startH, startM, 0, 0)
+    const endDate = new Date(period.dateObj)
+    endDate.setHours(endH, endM, 0, 0)
+
+    const data = await restGet(session, 'rest/view/v2/calendar-entry/detail', {
+        elementId:     session.personId,
+        elementType:   session.personType,
+        startDateTime: fmt(startDate),
+        endDateTime:   fmt(endDate),
+        homeworkOption: 'DUE',
+    })
+
+    const entry = data?.calendarEntries?.[0]
+    if (!entry) return { homeworks: [], teachingContent: null }
+
+    return {
+        homeworks: (entry.homeworks ?? []).map(hw => ({
+            id:        hw.id,
+            text:      hw.text,
+            remark:    hw.remark,
+            completed: hw.completed,
+            dueDate:   new Date(hw.dueDateTime),
+            setDate:   new Date(hw.dateTime),
+        })),
+        teachingContent: entry.teachingContent ?? null,
+    }
 }
