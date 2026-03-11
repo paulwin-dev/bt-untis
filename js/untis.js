@@ -464,72 +464,6 @@ export async function getTimetableDefinition(session) {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Absences  (legacy RPC — not available in new REST API)
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Fetch all absences for the current school year.
- *
- * @param {Session} session
- * @returns {Promise<Absence[]>}
- *
- * ── ABSENCE SHAPE ──────────────────────────────────────────────────────────
- * {
- *   date:      Date,
- *   startTime: number,
- *   endTime:   number,
- *   startStr:  string,
- *   endStr:    string,
- *   subject:   string,
- *   isExcused: boolean,
- *   status:    'excused' | 'unexcused' | 'open',
- * }
- */
-export async function getAbsences(session) {
-	const year = await getCurrentSchoolYear(session);
-	const startDate = toUntisDate(year.startDate);
-	const endDate = toUntisDate(year.endDate);
-
-	const candidates = [
-		[`classreg/absences/student`,
-			{ studentId: session.personId, startDate, endDate, includeExcused: true, includeUnExcused: true }],
-		[`classreg/absences/students/${session.personId}`,
-		{ startDate, endDate }],
-		[`students/${session.personId}/absences`,
-		{ startDate, endDate }],
-	];
-
-	let raw = null;
-	for (const [path, params] of candidates) {
-		try {
-			const result = await restGet(session, path, params);
-			const arr = result?.absences ?? result?.data ?? result?.result
-				?? (Array.isArray(result) ? result : null);
-			if (arr?.length) { raw = arr; break; }
-		} catch { /* try next */ }
-	}
-
-	if (!raw) return [];
-
-	return raw.map(a => {
-		const status = a.isExcused ? 'excused'
-			: a.excuseStatus === 'UNEXCUSED' ? 'unexcused'
-				: 'open';
-		return {
-			date: fromUntisDate(a.date),
-			startTime: a.startTime,
-			endTime: a.endTime,
-			startStr: formatTime(a.startTime),
-			endStr: formatTime(a.endTime),
-			subject: a.subject?.name ?? a.subjectName ?? '',
-			isExcused: !!a.isExcused,
-			status,
-		};
-	});
-}
-
-
-// ─────────────────────────────────────────────────────────────────────────────
 //  Grades  (legacy RPC — not available in new REST API)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -689,4 +623,33 @@ export async function getPeriodDetails(session, period) {
         })),
         teachingContent: entry.teachingContent ?? null,
     }
+}
+
+export async function getAbsences(session) {
+    const year = await getCurrentSchoolYear(session)
+    const startDate = toUntisDate(year.startDate)
+    const endDate   = toUntisDate(year.endDate)
+
+    const result = await restGet(session, 'classreg/absences/students', {
+        startDate,
+        endDate,
+        studentId:      session.personId,
+        excuseStatusId: -1,
+    })
+
+    const raw = result?.data?.absences ?? []
+
+    return raw.map(a => ({
+        id:        a.id,
+        date:      fromUntisDate(a.startDate),
+        startTime: a.startTime,
+        endTime:   a.endTime,
+        startStr:  formatTime(a.startTime),
+        endStr:    formatTime(a.endTime),
+        reason:    a.reason ?? '',
+        text:      a.text ?? '',
+        isExcused: a.isExcused,
+        isLate:    a.reason === 'late',
+        excuseStatus: a.excuseStatus ?? null,
+    }))
 }

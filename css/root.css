@@ -18,7 +18,8 @@
     --success: rgb(40, 200, 80);
     --info: rgb(95, 152, 250);
 
-    --header-font: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif
+    --header-font: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    --navbar-height: 55px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -144,7 +145,7 @@ body, html {
     border-top: 1px solid var(--border);
     z-index: 2;
     width: 100vw;
-    height: 55px;
+    height: var(--navbar-height);
     display: flex;
     align-items: center;
 }
