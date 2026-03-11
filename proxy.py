@@ -57,6 +57,7 @@ def get_client() -> aiohttp.ClientSession:
         _client = aiohttp.ClientSession(
             connector=connector,
             timeout=aiohttp.ClientTimeout(total=15),
+            cookie_jar=aiohttp.DummyCookieJar(),
         )
     return _client
 

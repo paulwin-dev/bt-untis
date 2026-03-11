@@ -4,6 +4,10 @@
     --homework-color: rgb(150, 100, 220);
 }
 
+#schedule-screen {
+    z-index: 1;
+}
+
 #schedule-user {
     margin: 0;
     margin-left: 13px;
