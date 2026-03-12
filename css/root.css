@@ -9,6 +9,7 @@
 
     --text: rgb(0, 0, 0);
     --surface-text: rgb(255, 255, 255);
+    --surace-text-muted: rgb(206, 206, 206);
     --muted-text: rgb(116, 116, 116);
 
     --button: rgb(255, 80, 32);
@@ -33,6 +34,7 @@
 
         --text: rgb(255, 255, 255);
         --surface-text: rgb(255, 255, 255);
+        --surace-text-muted: rgb(160, 160, 160);
         --muted-text: rgb(160, 160, 160);
 
         --button: rgb(255, 80, 32);
@@ -56,6 +58,10 @@
 input, textarea {
     user-select: text;
     -webkit-user-select: text;
+}
+
+input, textarea::placeholder {
+    color: var(--surace-text-muted);
 }
 
 h1 {

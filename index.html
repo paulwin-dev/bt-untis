@@ -116,6 +116,7 @@
             <div id="schedule">
                 <div id="schedule-day-headers"></div>
                 <div id="schedule-time-indicator" hidden></div>
+                <div id="schedule-time-column"></div>
                 <div id="schedule-grid"></div>
             </div>
 
@@ -188,6 +189,18 @@
                         </div>
                     </div>
                 </template>
+            </div>
+        </div>
+    </div>
+
+    <div id="hw-add-popup" hidden>
+        <div id="hw-add-backdrop"></div>
+        <div id="hw-add-container">
+            <h3 id="hw-add-title">Add Homework</h3>
+            <textarea id="hw-add-input" placeholder="What's the assignment?"></textarea>
+            <div id="hw-add-buttons">
+                <button type="button" class="general-button" id="hw-add-cancel" style="background:var(--surface)">Cancel</button>
+                <button type="button" class="general-button" id="hw-add-confirm">Add</button>
             </div>
         </div>
     </div>

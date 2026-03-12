@@ -18,6 +18,12 @@ const grid = document.getElementById("schedule-grid")
 const details = document.getElementById("schedule-details")
 const detailsHwTemplate = document.getElementById("schedule-details-hw-temp")
 
+const hwAddPopup   = document.getElementById("hw-add-popup")
+const hwAddInput   = document.getElementById("hw-add-input")
+const hwAddConfirm = document.getElementById("hw-add-confirm")
+const hwAddCancel  = document.getElementById("hw-add-cancel")
+const hwAddBackdrop = document.getElementById("hw-add-backdrop")
+
 const weekCache = new Map()
 
 function isToday(date) {
@@ -35,7 +41,7 @@ function intToMinutes(t) {
 
 function getWeekKey(weekOffset) {
     const monday = untis.addDays(untis.getMonday(), weekOffset * 7)
-    return `${monday.getFullYear()}-${String(monday.getMonth()+1).padStart(2,'0')}-${String(monday.getDate()).padStart(2,'0')}`
+    return `${monday.getFullYear()}-${String(monday.getMonth()+1).padStart(2,"0")}-${String(monday.getDate()).padStart(2,"0")}`
 }
 
 function offlineCacheWeek(weekOffset, week) {
@@ -59,12 +65,48 @@ async function prefetchWeeks(start, before, after) {
 }
 
 function getDateKey(dayDate) {
-	return `${dayDate.getFullYear()}-${String(dayDate.getMonth()+1).padStart(2,'0')}-${String(dayDate.getDate()).padStart(2,'0')}`;
+	return `${dayDate.getFullYear()}-${String(dayDate.getMonth()+1).padStart(2,"0")}-${String(dayDate.getDate()).padStart(2,"0")}`;
 }
 
 //attempts to remove levels such as "AP", "GK", "Grunndkurs", etc from course names
 function removeLevelFromCourseName(courseName) {
 	return courseName.replace("GK", "").replace("AP", "").replace("Grundkurs", "").replace("Leistungskurs", "")
+}
+
+function openAddHomeworkPopup() {
+    hwAddInput.value = ''
+    hwAddPopup.hidden = false
+    hwAddInput.focus()
+    history.pushState({ panel: 'hw-add' }, '')
+}
+
+function closeAddHomeworkPopup() {
+    hwAddPopup.hidden = true
+}
+
+function initAddHomeworkPopup() {
+    hwAddCancel.addEventListener('click', () => history.back())
+    hwAddBackdrop.addEventListener('click', () => history.back())
+
+    hwAddConfirm.addEventListener('click', async () => {
+        const text = hwAddInput.value.trim()
+        if (!text) return
+
+        const { period, dateKey, customData } = curDetailsData
+        const existing = customData.homework ?? []
+        const newHw = { text, completed: false, id: `custom-${Date.now()}` }
+        const updated = [...existing, newHw]
+
+        await storage.putCustomPeriodData(updated, customData.note ?? '', dateKey, period.startTime)
+        curDetailsData.customData.homework = updated
+
+        const hwList = details.querySelector('#schedule-details-hw-list')
+        hwList.appendChild(createHomeworkItem(newHw.text, false, null, false))
+
+        closeAddHomeworkPopup()
+    })
+
+    document.getElementById('schedule-details-add-hw').addEventListener('click', openAddHomeworkPopup)
 }
 
 function createHomeworkItem(text, completed, apiId, fromTeacher) {
@@ -80,7 +122,15 @@ function createHomeworkItem(text, completed, apiId, fromTeacher) {
     completeBtn.addEventListener("click", async () => {
         const isCompleted = completeBtn.classList.toggle("completed")
         label.style.textDecoration = isCompleted ? "line-through" : ""
-        if (apiId) {
+
+        if (apiId?.toString().startsWith('custom-')) {
+            const { period, dateKey, customData } = curDetailsData
+            const updated = (customData.homework ?? []).map(hw =>
+                hw.id === apiId ? { ...hw, completed: isCompleted } : hw
+            )
+            customData.homework = updated
+            await storage.putCustomPeriodData(updated, customData.note ?? '', dateKey, period.startTime)
+        } else if (apiId) {
             await storage.setHomeworkCompleted(apiId, isCompleted)
         }
     })
@@ -91,7 +141,13 @@ function createHomeworkItem(text, completed, apiId, fromTeacher) {
         deleteBtn.remove()
     } else {
         const deleteBtn = item.querySelector(".delete-button")
-        deleteBtn.addEventListener("click", () => item.remove())
+        deleteBtn.addEventListener("click", async () => {
+            const { period, dateKey, customData } = curDetailsData
+            const updated = (customData.homework ?? []).filter(hw => hw.id !== apiId)
+            customData.homework = updated
+            await storage.putCustomPeriodData(updated, customData.note ?? '', dateKey, period.startTime)
+            item.remove()
+        })
     }
 
     return item
@@ -99,9 +155,10 @@ function createHomeworkItem(text, completed, apiId, fromTeacher) {
 
 async function openDetailsPanel(period, dateKey) {
 	const customData = await storage.getCustomPeriodData(dateKey, period.startTime) ?? {}
+    console.log(customData)
 	curDetailsData = { period, dateKey, customData }
 
-	history.pushState({ panel: 'details' }, '')
+	history.pushState({ panel: "details" }, "")
 
     details.hidden = false
     details.querySelector("#schedule-details-header").textContent = period.subject?.longname + " - " + period.subject?.name ?? "?"
@@ -117,7 +174,7 @@ async function openDetailsPanel(period, dateKey) {
 	}
 
     const badge = details.querySelector("#schedule-details-status")
-    badge.textContent = period.isExam ? "Klausur" : period.isChanged ? "Substitution" : ""
+    badge.textContent = period.isExam ? "Exam" : period.isChanged ? "Room Change" : ""
     badge.hidden = !period.isExam && !period.isChanged
 
 	//note for self
@@ -130,10 +187,10 @@ async function openDetailsPanel(period, dateKey) {
     const completedHomework = await storage.getCompletedHomework()
     let homeworks
 
-    if (session && navigator.onLine) {
+    if (session && navigator.onLine && period.hasHomework) {
         ({ homeworks } = await untis.getPeriodDetails(session, period) ?? [])
         storage.saveHomeworkCache(period.date, period.startTime, homeworks)
-    } else {
+    } else if (period.hasHomework) {
         homeworks = await storage.loadHomeworkCache(period.date, period.startTime)
         if (!homeworks) {
             notifications.notify("Unable to load homework — check your internet connection.")
@@ -141,8 +198,15 @@ async function openDetailsPanel(period, dateKey) {
         homeworks = homeworks ?? []
     }
 
+    const customData_hw = customData.homework ?? []
+    homeworks = [...(homeworks ?? []), ...customData_hw]
+
     for (const hw of homeworks) {
-        hwList.appendChild(createHomeworkItem(hw.text, completedHomework[hw.id] ?? hw.completed, hw.id, true))
+        const isCustom = hw.id?.toString().startsWith('custom-')
+        const isCompleted = isCustom
+            ? hw.completed
+            : completedHomework[hw.id] ?? hw.completed
+        hwList.appendChild(createHomeworkItem(hw.text, isCompleted, hw.id, !isCustom))
     }
 }
 
@@ -156,7 +220,7 @@ async function closeDetailsPanel() {
     if (notesText === customData.note) return
     if (notesText === "" && !customData?.note) return;
 
-    await storage.putCustomPeriodData(curDetailsData.homework, notesText, dateKey, period.startTime)
+    await storage.putCustomPeriodData(customData.homework ?? [], notesText, dateKey, period.startTime)
     notifications.notify("Saved new note.", "info")
 }
 
@@ -198,7 +262,7 @@ async function attemptLoadWeek(weekOffset) {
         return saved
     }
 
-    //we have both a session and we're online -> fetch new data
+    //we have both a session and we"re online -> fetch new data
     try {
         const { periods, dayStatuses } = await untis.getTimetable(session, weekOffset)
         inMemoryCacheWeek(weekOffset, { periods, dayStatuses })
@@ -212,8 +276,8 @@ async function attemptLoadWeek(weekOffset) {
 }
 
 function updateTimeIndicator() {
-    const indicator = document.getElementById('schedule-time-indicator')
-    const grid = document.getElementById('schedule-grid')
+    const indicator = document.getElementById("schedule-time-indicator")
+    const grid = document.getElementById("schedule-grid")
     if (!scheduleDefinition || currentWeek !== 0) {
         indicator.hidden = true
         return
@@ -230,7 +294,7 @@ function updateTimeIndicator() {
         return
     }
 
-    // find which slot we're currently in
+    // find which slot we"re currently in
     const slotIndex = slots.findIndex(s =>
         nowM >= intToMinutes(s.startInt) && nowM <= intToMinutes(s.endInt)
     )
@@ -241,7 +305,7 @@ function updateTimeIndicator() {
         : slotIndex
 
     // get the actual DOM cell for this slot (first column, row = targetIndex + 1)
-    const cells = grid.querySelectorAll('.schedule-cell, .free')
+    const cells = grid.querySelectorAll(".schedule-cell, .free")
     // cells are laid out row by row, so nth cell in first column = targetIndex * 5
     // easier: use getBoundingClientRect on the grid itself and calculate from slot position
     const rowHeight = 65 // match your grid-auto-rows
@@ -268,16 +332,16 @@ async function loadWeek(weekOffset, direction = 0) {
     currentWeek = weekOffset
 
     if (direction !== 0) {
-        grid.classList.add(direction > 0 ? 'slide-out-left' : 'slide-out-right')
+        grid.classList.add(direction > 0 ? "slide-out-left" : "slide-out-right")
         await new Promise(r => setTimeout(r, 200))
     }
 
     function finishAnimation() {
         if (direction !== 0) {
-            grid.classList.remove('slide-out-left', 'slide-out-right')
-            grid.classList.add(direction > 0 ? 'slide-in-left' : 'slide-in-right')
+            grid.classList.remove("slide-out-left", "slide-out-right")
+            grid.classList.add(direction > 0 ? "slide-in-left" : "slide-in-right")
             grid.offsetHeight
-            grid.classList.remove('slide-in-left', 'slide-in-right')
+            grid.classList.remove("slide-in-left", "slide-in-right")
         }
     }
 
@@ -317,6 +381,19 @@ async function loadWeek(weekOffset, direction = 0) {
             <span class="day-number">${dayDate.getDate()}</span>
         `;
         headers.appendChild(el);
+    }
+
+    const timeColumn = document.getElementById("schedule-time-column")
+    timeColumn.textContent = ""
+
+    for (const slot of timeslots) {
+        const label = document.createElement("div")
+        label.className = "schedule-time-label"
+        label.innerHTML = `
+            <span>${untis.formatTime(slot.startInt)}</span>
+            <span class="schedule-time-end">${untis.formatTime(slot.endInt)}</span>
+        `
+        timeColumn.appendChild(label)
     }
 
     grid.textContent = ""
@@ -380,9 +457,9 @@ async function loadWeek(weekOffset, direction = 0) {
                     <span class="subject-short">${period.subject?.name ?? "?"}</span>
                     <span class="room">${period.rooms[0]?.name ?? ""}</span>
                     <div class="cell-indicators">
-                        ${customData?.note?.length > 0 ? CUSTOM_DATA_ICON : ''}
-                        ${period.notes?.length > 0 ? TEACHER_NOTE_ICON : ''}
-                        ${hasHomework ? HOMEWORK_ICON : ''}
+                        ${customData?.note?.length > 0 ? CUSTOM_DATA_ICON : ""}
+                        ${period.notes?.length > 0 ? TEACHER_NOTE_ICON : ""}
+                        ${hasHomework ? HOMEWORK_ICON : ""}
                     </div>
                 `
                 cell.addEventListener("click", () => openDetailsPanel(period, dateKey))
@@ -404,11 +481,11 @@ function doSwipeDetection() {
     let touchStartX = 0
     let weekOffset = 0
 
-    grid.addEventListener('touchstart', e => {
+    grid.addEventListener("touchstart", e => {
         touchStartX = e.touches[0].clientX
     }, { passive: true })
 
-    grid.addEventListener('touchend', e => {
+    grid.addEventListener("touchend", e => {
         const diff = touchStartX - e.changedTouches[0].clientX
         if (Math.abs(diff) < 50) return
 
@@ -434,13 +511,17 @@ export async function load(_session) {
     setInterval(updateTimeIndicator, 60000)
 
     doSwipeDetection()
+    initAddHomeworkPopup()
+
+    details.querySelector(".close-button").addEventListener("click", () => history.back())
 }
 
-details.querySelector(".close-button").addEventListener("click", () => {
-    history.back() // triggers popstate which closes details panel
-})
-
 window.addEventListener('popstate', e => {
+    if (!hwAddPopup.hidden) {
+        closeAddHomeworkPopup()
+        return
+    }
+
     if (!details.hidden) {
         closeDetailsPanel()
     }
