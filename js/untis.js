@@ -251,13 +251,18 @@ export async function logout(session) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getCurrentSchoolYear(session) {
-	const raw = await rpc(session, 'getCurrentSchoolyear');
-	const toDate = o => fromUntisDate(o.year * 10000 + o.month * 100 + o.day);
-	return {
-		name: raw.name,
-		startDate: toDate(raw.startDate),
-		endDate: toDate(raw.endDate),
-	};
+    const raw = await rpc(session, 'getCurrentSchoolyear')
+
+    const toDate = o => {
+        if (typeof o === 'number') return fromUntisDate(o)
+        return fromUntisDate(o.year * 10000 + o.month * 100 + o.day)
+    }
+
+    return {
+        name: raw.name,
+        startDate: toDate(raw.startDate),
+        endDate: toDate(raw.endDate),
+    }
 }
 
 

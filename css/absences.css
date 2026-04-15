@@ -39,7 +39,6 @@
 
     background-color: var(--surface);
     border-radius: 10px;
-    border: 1px solid var(--error);
 
     box-sizing: border-box;
 
@@ -48,6 +47,18 @@
     padding-left: 8px;
 
     margin-bottom: 10px;
+}
+
+.absence-item.excused {
+    border: 1px solid var(--success);
+}
+
+.absence-item.unexcused {
+    border: 1px solid var(--error);
+}
+
+.absence-item.open {
+    border: 1px solid var(--info);
 }
 
 .absence-item-title {
@@ -68,6 +79,10 @@
     margin-bottom: 5px;
 
     font-size: 11pt;
+}
+
+.absence-item-data-container[hidden] {
+    display: none;
 }
 
 .absence-item-data-container svg {
