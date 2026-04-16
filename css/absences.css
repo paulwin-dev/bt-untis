@@ -19,9 +19,9 @@
     overflow-y: scroll;
     scrollbar-width: none;
 
-    padding-left: 20px;
+    padding-left: 10px;
     padding-bottom: 10px;
-    width: calc(100vw - 40px);
+    width: calc(100vw - 20px);
 }
 
 .absence-item {
