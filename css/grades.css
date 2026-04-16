@@ -1,0 +1,160 @@
+#grades-screen[hidden] {
+    display: none;
+}
+
+#grades-screen .loader {
+    margin: auto;
+    margin-top: calc(50vh - 48px);
+}
+
+#grades-header {
+    margin: 0;
+    margin-bottom: 20px;
+    margin-left: 13px;
+
+    font-size: 16pt;
+    font-weight: normal;
+
+    color: var(--muted-text);
+}
+
+#grades-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: scroll;
+    scrollbar-width: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    padding-left: 20px;
+    padding-bottom: 10px;
+    width: calc(100vw - 40px);
+}
+
+#grades-list::-webkit-scrollbar { display: none; }
+
+.grade-subject-card {
+    background: var(--surface);
+    border-radius: 12px;
+}
+
+.grade-subject-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    cursor: pointer;
+}
+
+.grade-subject-name {
+    font-size: 13pt;
+    font-weight: 600;
+    color: var(--surface-text);
+    margin: 0;
+}
+
+.grade-subject-teacher {
+    font-size: 9pt;
+    color: var(--surface-text);
+    opacity: 0.5;
+    margin-top: 2px;
+}
+
+.grade-subject-avg {
+    font-size: 18pt;
+    font-weight: 700;
+    color: var(--surface-text);
+    flex-shrink: 0;
+}
+
+.grade-subject-avg.no-grades {
+    font-size: 11pt;
+    opacity: 0.4;
+}
+
+.grade-subject-chevron {
+    stroke: var(--surface-text);
+    opacity: 0.4;
+    flex-shrink: 0;
+    margin-left: 8px;
+    transition: transform 0.2s ease;
+}
+
+.grade-subject-card.expanded .grade-subject-chevron {
+    transform: rotate(180deg);
+}
+
+.grade-subject-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.grade-entries[hidden] {
+    display: none;
+}
+
+.grade-entries {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.grade-subject-card.expanded .grade-entries {
+    display: flex;
+}
+
+.grade-entry {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.grade-entry:last-child {
+    border-bottom: none;
+}
+
+.grade-entry-mark {
+    font-size: 16pt;
+    font-weight: 700;
+    color: var(--surface-text);
+    width: 32px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.grade-entry-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.grade-entry-type {
+    font-size: 10pt;
+    color: var(--surface-text);
+    font-weight: 500;
+}
+
+.grade-entry-date {
+    font-size: 9pt;
+    color: var(--surface-text);
+    opacity: 0.5;
+}
+
+.grade-entry-text {
+    font-size: 9pt;
+    color: var(--surface-text);
+    opacity: 0.5;
+    font-style: italic;
+}
+
+.grade-no-entries {
+    padding: 12px 14px;
+    font-size: 10pt;
+    color: var(--surface-text);
+    opacity: 0.4;
+}

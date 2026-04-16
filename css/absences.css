@@ -1,84 +1,78 @@
-#absences-screen {
-    width: calc(100vw - 40px);
-    height: calc(100vh - var(--navbar-height));
-    padding-left: 20px;
-    padding-right: 20px;
-    padding-top: 10px;
-
-    display: block;
-    flex-direction: column;
-}
-
 #absences-screen[hidden] {
     display: none;
 }
 
 #absences-header {
-    margin-bottom: 0px;
-    flex: none;
+    margin: 0;
+    margin-bottom: 20px;
+    margin-left: 13px;
+
+    font-size: 16pt;
+    font-weight: normal;
 
     color: var(--muted-text);
-
-    font-size: 20pt;
-    margin-bottom: 10px;
 }
 
 #absences-list {
+    flex: 1;
+    min-height: 0;
     overflow-y: scroll;
-    height: calc(100vh - var(--navbar-height) - 70px);
+    scrollbar-width: none;
 
-    scrollbar-width: none; /* Firefox */
-}
-
-#absences-list::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, mobile */
+    padding-left: 20px;
+    padding-bottom: 10px;
+    width: calc(100vw - 40px);
 }
 
 .absence-item {
-    width: 100%;
-
     background-color: var(--surface);
-    border-radius: 10px;
-
+    border-radius: 12px;
     box-sizing: border-box;
-
-    padding-bottom: 5px;
-    padding-top: 5px;
-    padding-left: 8px;
-
+    padding: 12px 14px;
     margin-bottom: 10px;
+    border-left: 4px solid transparent;
 }
 
-.absence-item.excused {
-    border: 1px solid var(--success);
-}
+.absence-item.excused   { border-left-color: var(--success); }
+.absence-item.unexcused { border-left-color: var(--error); }
+.absence-item.open      { border-left-color: var(--info); }
 
-.absence-item.unexcused {
-    border: 1px solid var(--error);
-}
-
-.absence-item.open {
-    border: 1px solid var(--info);
+.absence-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
 }
 
 .absence-item-title {
-    margin-left: 0;
-    margin-top: 0;
-    margin-bottom: 3px;
-
-    font-size: 15pt;
-    font-weight: normal;
+    margin: 0;
+    font-size: 13pt;
+    font-weight: 600;
+    color: var(--surface-text);
 }
+
+.absence-item-status-badge {
+    font-size: 9pt;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 100px;
+    background: rgba(255,255,255,0.12);
+    color: var(--surface-text);
+}
+
+.absence-item.excused   .absence-item-status-badge { background: var(--success); color: white; }
+.absence-item.unexcused .absence-item-status-badge { background: var(--error);   color: white; }
+.absence-item.open      .absence-item-status-badge { background: var(--info);    color: white; }
 
 .absence-item-data-container {
     display: flex;
     align-items: center;
-    gap: 5px;
-    margin-left: 0;
-    margin-top: 0;
-    margin-bottom: 5px;
+    gap: 7px;
+    margin-bottom: 4px;
+}
 
-    font-size: 11pt;
+.absence-item-data-container:last-child {
+    margin-bottom: 0;
 }
 
 .absence-item-data-container[hidden] {
@@ -86,12 +80,14 @@
 }
 
 .absence-item-data-container svg {
-    stroke: var(--muted-text);
+    stroke: var(--surface-text);
+    opacity: 0.5;
     flex-shrink: 0;
-    margin: 0;
 }
 
 .absence-item-data-container p {
     margin: 0;
-    color: var(--muted-text);
+    font-size: 10pt;
+    color: var(--surface-text);
+    opacity: 0.8;
 }

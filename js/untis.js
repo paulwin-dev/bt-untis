@@ -259,6 +259,7 @@ export async function getCurrentSchoolYear(session) {
     }
 
     return {
+		id: raw.id,
         name: raw.name,
         startDate: toDate(raw.startDate),
         endDate: toDate(raw.endDate),
@@ -487,34 +488,44 @@ export async function getTimetableDefinition(session) {
  * }
  */
 export async function getGrades(session) {
-	const year = await getCurrentSchoolYear(session);
-	const startDate = toUntisDate(year.startDate);
-	const endDate = toUntisDate(year.endDate);
+    const year = await getCurrentSchoolYear(session)
 
-	const candidates = [
-		[`classreg/grade/list/student/${session.personId}`, {}],
-		[`students/${session.personId}/grades`, { startDate, endDate }],
-		[`classreg/grades`, { personId: session.personId, startDate, endDate }],
-	];
+    const listResult = await restGet(session, 'classreg/grade/grading/list', {
+        studentId: session.personId,
+        schoolyearId: year.id,
+    })
 
-	let raw = null;
-	for (const [path, params] of candidates) {
-		try {
-			const result = await restGet(session, path, params);
-			const arr = result?.data ?? result?.grades ?? result?.result
-				?? (Array.isArray(result) ? result : null);
-			if (arr?.length) { raw = arr; break; }
-		} catch { /* try next */ }
-	}
+    const lessons = (listResult?.data?.lessons ?? []).filter(l => l.subjects)
 
-	if (!raw) return [];
+    const result = []
 
-	return raw.map(g => ({
-		subject: g.subject?.name ?? g.subjectName ?? 'Unknown',
-		value: g.grade?.name ?? g.mark ?? g.value ?? '—',
-		label: g.gradeType?.name ?? g.text ?? g.description ?? 'Grade',
-		date: g.date ? fromUntisDate(g.date) : null,
-	}));
+    for (const lesson of lessons) {
+        try {
+            const lessonResult = await restGet(session, 'classreg/grade/grading/lesson', {
+                studentId: session.personId,
+                lessonId: lesson.id,
+            })
+
+            const data = lessonResult?.data ?? {}
+            const grades = data.grades ?? []
+
+            result.push({
+                lessonId: lesson.id,
+                subject: lesson.subjects,
+                teachers: lesson.teachers,
+                grades: grades.map(g => ({
+                    id: g.id,
+                    mark: g.mark?.name ?? '—',
+                    markValue: g.mark?.markDisplayValue ?? null,
+                    type: g.examType?.longname ?? g.examType?.name ?? 'Grade',
+                    date: g.date ? fromUntisDate(g.date) : null,
+                    text: g.text ?? '',
+                }))
+            })
+        } catch { /* skip failed lessons */ }
+    }
+
+    return result
 }
 
 export function getNameFromToken(session) {

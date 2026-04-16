@@ -1,0 +1,15 @@
+#more-screen {
+    padding-left: 20px;
+    width: calc(100vw - 40px);
+}
+
+#more-user-container {
+    width: 100%;
+    height: fit-content;
+
+    padding-top: 20px;
+    padding-bottom: 20px;
+
+    background-color: var(--surface);
+    border-radius: 12px;
+}

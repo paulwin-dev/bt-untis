@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="./css/schedule.css">
     <link rel="stylesheet" href="./css/installer.css">
     <link rel="stylesheet" href="./css/absences.css">
+    <link rel="stylesheet" href="./css/grades.css">
+    <link rel="stylesheet" href="./css/more.css">
 </head>
 <body>
     <div id="notifications-screen">
@@ -157,21 +159,24 @@
             </div>
         </div>
 
-        <div id="absences-screen" hidden>
+        <div id="absences-screen" class="screen" hidden>
             <h1 id="absences-header">Absences</h1>
             <div id="absences-list">
                 <template id="absences-item-template">
                     <div class="absence-item">
-                        <h2 class="absence-item-title">03.04.2026</h2>
+                        <div class="absence-item-header">
+                            <h2 class="absence-item-title">03.04.2026</h2>
+                            <span class="absence-item-status-badge">Offen</span>
+                        </div>
                         <div class="absence-item-data-container">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="12" cy="12" r="10"/>
                                 <polyline points="12 6 12 12 16 14"/>
                             </svg>
-                            <p class="absence-item-time">12:15 - 13:05</p>
+                            <p class="absence-item-time">12:15 – 13:05</p>
                         </div>
                         <div class="absence-item-data-container">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="12" cy="12" r="10"/>
                                 <line x1="12" y1="8" x2="12" y2="8"/>
                                 <line x1="12" y1="12" x2="12" y2="16"/>
@@ -179,7 +184,7 @@
                             <p class="absence-item-reason">abwesend</p>
                         </div>
                         <div class="absence-item-data-container absence-item-data-note">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                                 <polyline points="14 2 14 8 20 8"/>
                                 <line x1="8" y1="13" x2="16" y2="13"/>
@@ -190,6 +195,45 @@
                     </div>
                 </template>
             </div>
+        </div>
+
+        <div id="grades-screen" class="screen" hidden>
+            <h1 id="grades-header">Grades</h1>
+            <span class="loader"></span>
+            <div id="grades-list">
+                <template id="grade-subject-template">
+                    <div class="grade-subject-card">
+                        <div class="grade-subject-header">
+                            <div>
+                                <p class="grade-subject-name"></p>
+                                <p class="grade-subject-teacher"></p>
+                            </div>
+                            <div class="grade-subject-right">
+                                <span class="grade-subject-avg"></span>
+                                <svg class="grade-subject-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="grade-entries" hidden></div>
+                    </div>
+                </template>
+            
+                <template id="grade-entry-template">
+                    <div class="grade-entry">
+                        <span class="grade-entry-mark"></span>
+                        <div class="grade-entry-info">
+                            <span class="grade-entry-type"></span>
+                            <span class="grade-entry-date"></span>
+                            <span class="grade-entry-text" hidden></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <div id="more-screen" class="screen" hidden>
+            <div id="more-user-container"></div>
         </div>
     </div>
 

@@ -1,5 +1,7 @@
 import * as untis from "../untis.js"
 
+const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1);
+
 const absencesContainer = document.getElementById("absences-list")
 const absenceTemplate = document.getElementById("absences-item-template")
 
@@ -26,14 +28,14 @@ function renderAbsence(data) {
     let className = data.isExcused ? "excused" : "unexcused"
     if (data.excuseStatus === null) className = "open"
 
+    element.querySelector(".absence-item-status-badge").textContent = capitalize(className)
+
     element.classList.add(className)
     absencesContainer.appendChild(node)
 }
 
 export async function load(session) {
     absences = await untis.getAbsences(session)
-
-    console.log(absences)
     
     for (const absence of absences.reverse()) {
         renderAbsence(absence)
