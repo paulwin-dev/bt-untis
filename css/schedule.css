@@ -28,6 +28,11 @@
     margin-top: 10px;
 }
 
+#schedule-month-indicator {
+    font-size: 15px;
+    font-weight: bold;
+}
+
 #schedule-day-headers {
     display: grid;
     grid-template-columns: repeat(5, 1fr);

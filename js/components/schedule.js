@@ -365,8 +365,10 @@ async function loadWeek(weekOffset, direction = 0) {
     const byDay = untis.groupByDay(periods)
     const timeslots = definition.slots
     const skip = new Set()
-
     const monday = untis.addDays(untis.getMonday(), weekOffset * 7);
+
+    document.getElementById("schedule-month-indicator").textContent = monday.toLocaleString('default', { month: 'short' })
+
     const headers = document.getElementById("schedule-day-headers");
     headers.textContent = "";
     const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri"];

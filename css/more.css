@@ -3,6 +3,10 @@
     width: calc(100vw - 40px);
 }
 
+#more-screen[hidden] {
+    display: none;
+}
+
 #more-user-container {
     width: 100%;
     height: fit-content;
