@@ -86,10 +86,12 @@ function initDetailsDrag() {
         const currentY = matrix.m42
         const peekY = getDetailsTranslateFor("peek")
 
-        if (currentY > peekY + 80) {
+        if (currentY > peekY + 10) {
             // dragged well below the peek position -> dismiss
             history.back()
-        } else if (currentY < peekY / 2) {
+        } else if (detailsState == "full" && currentY > 25) {
+            snapDetailsTo("peek")
+        } else if (currentY < peekY + 25) {
             snapDetailsTo("full")
         } else {
             snapDetailsTo("peek")
