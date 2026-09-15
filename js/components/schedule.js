@@ -16,6 +16,8 @@ let currentWeek = 0;
 
 const grid = document.getElementById("schedule-grid")
 const details = document.getElementById("schedule-details")
+const detailsBackdrop = document.getElementById("schedule-details-backdrop")
+const detailsGrabZone = document.getElementById("schedule-details-grab-zone")
 const detailsHwTemplate = document.getElementById("schedule-details-hw-temp")
 
 const hwAddPopup   = document.getElementById("hw-add-popup")
@@ -25,6 +27,78 @@ const hwAddCancel  = document.getElementById("hw-add-cancel")
 const hwAddBackdrop = document.getElementById("hw-add-backdrop")
 
 const weekCache = new Map()
+
+// ---------- Class details drawer (iOS-style bottom sheet) ----------
+
+let detailsState = "closed" // "closed" | "peek" | "full"
+let detailsDrag = null
+
+function getDetailsPeekHeight() {
+    // height of the always-visible top zone (handle + header + status) plus a little breathing room
+    return detailsGrabZone.offsetHeight + 20
+}
+
+function getDetailsTranslateFor(state) {
+    if (state === "full") return 20
+    if (state === "peek") {
+        const peekY = window.innerHeight - getDetailsPeekHeight()
+        // never let the peek reveal more than ~65% of the screen, even with a huge header
+        return Math.max(peekY, window.innerHeight * 0.35)
+    }
+    return window.innerHeight // fully off-screen
+}
+
+function setDetailsTranslate(px, animate) {
+    details.style.transition = animate ? "" : "none"
+    details.style.transform = `translateY(${px}px)`
+}
+
+function snapDetailsTo(state) {
+    detailsState = state
+    details.classList.remove("dragging")
+    setDetailsTranslate(getDetailsTranslateFor(state), true)
+    detailsBackdrop.classList.toggle("visible", state !== "closed")
+}
+
+function initDetailsDrag() {
+    detailsGrabZone.addEventListener("pointerdown", e => {
+        if (e.target.closest("#schedule-details-close")) return
+
+        detailsDrag = { startY: e.clientY }
+        details.classList.add("dragging")
+        detailsGrabZone.setPointerCapture(e.pointerId)
+    })
+
+    detailsGrabZone.addEventListener("pointermove", e => {
+        if (!detailsDrag) return
+
+        const delta = e.clientY - detailsDrag.startY
+        const base = getDetailsTranslateFor(detailsState)
+        const next = Math.min(Math.max(base + delta, 0), window.innerHeight)
+        setDetailsTranslate(next, false)
+    })
+
+    const endDetailsDrag = () => {
+        if (!detailsDrag) return
+        detailsDrag = null
+
+        const matrix = new DOMMatrixReadOnly(getComputedStyle(details).transform)
+        const currentY = matrix.m42
+        const peekY = getDetailsTranslateFor("peek")
+
+        if (currentY > peekY + 80) {
+            // dragged well below the peek position -> dismiss
+            history.back()
+        } else if (currentY < peekY / 2) {
+            snapDetailsTo("full")
+        } else {
+            snapDetailsTo("peek")
+        }
+    }
+
+    detailsGrabZone.addEventListener("pointerup", endDetailsDrag)
+    detailsGrabZone.addEventListener("pointercancel", endDetailsDrag)
+}
 
 function isToday(date) {
     const t = new Date();
@@ -71,6 +145,29 @@ function getDateKey(dayDate) {
 //attempts to remove levels such as "AP", "GK", "Grunndkurs", etc from course names
 function removeLevelFromCourseName(courseName) {
 	return courseName.replace("GK", "").replace("AP", "").replace("Grundkurs", "").replace("Leistungskurs", "")
+}
+
+// ---------- Subject color assignment ----------
+// Deterministic hash (djb2 variant) so the same subject always maps to the same color,
+// even across sessions/devices, without needing to store anything.
+function hashString(str) {
+    let hash = 5381
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) + hash) + str.charCodeAt(i)
+        hash |= 0 // keep it a 32-bit int
+    }
+    return Math.abs(hash)
+}
+
+// Saturation/lightness tuned to sit well against --bg: rgb(15,15,15) and --surface: #46555f,
+// while staying in the same vivid-but-not-neon family as --button/--success/--info.
+const SUBJECT_COLOR_SATURATION = 68
+const SUBJECT_COLOR_LIGHTNESS = 58
+
+function getSubjectColor(subjectKey) {
+    if (!subjectKey) return "var(--muted-text)"
+    const hue = hashString(subjectKey.toString()) % 360
+    return `hsl(${hue}, ${SUBJECT_COLOR_SATURATION}%, ${SUBJECT_COLOR_LIGHTNESS}%)`
 }
 
 function openAddHomeworkPopup() {
@@ -161,8 +258,20 @@ async function openDetailsPanel(period, dateKey) {
 	history.pushState({ panel: "details" }, "")
 
     details.hidden = false
+    detailsBackdrop.hidden = false
+
     details.querySelector("#schedule-details-header").textContent = period.subject?.longname + " - " + period.subject?.name ?? "?"
-	
+
+    const badge = details.querySelector("#schedule-details-status")
+    badge.textContent = period.isExam ? "Exam" : period.isChanged ? "Room Change" : ""
+    badge.hidden = !period.isExam && !period.isChanged
+
+    // now that the grab-zone content (header/status) is set, its height is
+    // accurate, so start the sheet off-screen and slide it up to the peek position
+    setDetailsTranslate(window.innerHeight, false)
+    details.offsetHeight // force reflow before animating
+    requestAnimationFrame(() => snapDetailsTo("peek"))
+
 	const note = period.notes?.length > 0 ? period.notes : null
 	if (note) {
 		details.querySelector("#schedule-details-nfs-header").hidden = false
@@ -172,10 +281,6 @@ async function openDetailsPanel(period, dateKey) {
 		details.querySelector("#schedule-details-nfs-header").hidden = true
 		details.querySelector("#schedule-details-nfs").hidden = true
 	}
-
-    const badge = details.querySelector("#schedule-details-status")
-    badge.textContent = period.isExam ? "Exam" : period.isChanged ? "Room Change" : ""
-    badge.hidden = !period.isExam && !period.isChanged
 
 	//note for self
 	details.querySelector("#schedule-details-own-notes").value = customData.note?.length > 0 ? customData.note : ""
@@ -211,7 +316,15 @@ async function openDetailsPanel(period, dateKey) {
 }
 
 async function closeDetailsPanel() {
-    details.hidden = true
+    detailsState = "closed"
+    details.classList.remove("dragging")
+    setDetailsTranslate(window.innerHeight, true)
+    detailsBackdrop.classList.remove("visible")
+
+    details.addEventListener("transitionend", () => {
+        details.hidden = true
+        detailsBackdrop.hidden = true
+    }, { once: true })
 
     if (!curDetailsData) return;
 
@@ -392,7 +505,7 @@ async function loadWeek(weekOffset, direction = 0) {
         const label = document.createElement("div")
         label.className = "schedule-time-label"
         label.innerHTML = `
-            <span>${untis.formatTime(slot.startInt)}</span>
+            <span class="schedule-time-start">${untis.formatTime(slot.startInt)}</span>
             <span class="schedule-time-end">${untis.formatTime(slot.endInt)}</span>
         `
         timeColumn.appendChild(label)
@@ -455,6 +568,7 @@ async function loadWeek(weekOffset, direction = 0) {
                 if (isPast) cell.classList.add("past")
 
                 cell.innerHTML = `
+                    <span class="subject-color" style="background-color:${getSubjectColor(period.subject?.id ?? period.subject?.name)}"></span>
                     <span class="subject-long">${courseName || "?"}</span>
                     <span class="subject-short">${period.subject?.name ?? "?"}</span>
                     <span class="room">${period.rooms[0]?.name ?? ""}</span>
@@ -514,8 +628,10 @@ export async function load(_session) {
 
     doSwipeDetection()
     initAddHomeworkPopup()
+    initDetailsDrag()
 
     details.querySelector(".close-button").addEventListener("click", () => history.back())
+    detailsBackdrop.addEventListener("click", () => history.back())
 }
 
 window.addEventListener('popstate', e => {

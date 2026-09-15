@@ -1,4 +1,4 @@
-const CACHE = "untis-v3";
+const CACHE = "untis-v4";
 
 let useOffline = false //set from outside from the loader
 
