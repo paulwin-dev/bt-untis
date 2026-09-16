@@ -34,8 +34,24 @@ let detailsState = "closed" // "closed" | "peek" | "full"
 let detailsDrag = null
 
 function getDetailsPeekHeight() {
-    // height of the always-visible top zone (handle + header + status) plus a little breathing room
-    return detailsGrabZone.offsetHeight + 20
+    const grabZone = detailsGrabZone.offsetHeight
+    const hwSection = details.querySelector("#schedule-details-hw-list")
+    const addHwBtn = document.getElementById("schedule-details-add-hw")
+
+    // Measure from the top of the drawer down to the bottom of the "Add Homework" button
+    if (addHwBtn) {
+        const drawerRect = details.getBoundingClientRect()
+        const btnRect = addHwBtn.getBoundingClientRect()
+        
+        // Return height from panel top to bottom edge of button + extra padding
+        if (drawerRect.height > 0 && btnRect.bottom > 0) {
+            return (btnRect.bottom - drawerRect.top) + 24
+        }
+    }
+
+    // Fallback if elements aren't rendered yet
+    const hwHeight = hwSection ? hwSection.offsetHeight : 0
+    return grabZone + hwHeight + 110
 }
 
 function getDetailsTranslateFor(state) {
@@ -200,9 +216,14 @@ function initAddHomeworkPopup() {
         curDetailsData.customData.homework = updated
 
         const hwList = details.querySelector('#schedule-details-hw-list')
-        hwList.appendChild(createHomeworkItem(newHw.text, false, null, false))
+        hwList.appendChild(createHomeworkItem(newHw.text, false, newHw.id, false))
 
         closeAddHomeworkPopup()
+
+        // Dynamically adjust peek height to fit the new item if currently in peek mode
+        if (detailsState === "peek") {
+            snapDetailsTo("peek")
+        }
     })
 
     document.getElementById('schedule-details-add-hw').addEventListener('click', openAddHomeworkPopup)
@@ -240,12 +261,18 @@ function createHomeworkItem(text, completed, apiId, fromTeacher) {
         deleteBtn.remove()
     } else {
         const deleteBtn = item.querySelector(".delete-button")
+        // Inside delete button click handler:
         deleteBtn.addEventListener("click", async () => {
             const { period, dateKey, customData } = curDetailsData
             const updated = (customData.homework ?? []).filter(hw => hw.id !== apiId)
             customData.homework = updated
             await storage.putCustomPeriodData(updated, customData.note ?? '', dateKey, period.startTime)
             item.remove()
+        
+            // Recalculate peek height after item removal
+            if (detailsState === "peek") {
+                snapDetailsTo("peek")
+            }
         })
     }
 
@@ -253,41 +280,35 @@ function createHomeworkItem(text, completed, apiId, fromTeacher) {
 }
 
 async function openDetailsPanel(period, dateKey) {
-	const customData = await storage.getCustomPeriodData(dateKey, period.startTime) ?? {}
-    console.log(customData)
-	curDetailsData = { period, dateKey, customData }
+    const customData = await storage.getCustomPeriodData(dateKey, period.startTime) ?? {}
+    curDetailsData = { period, dateKey, customData }
 
-	history.pushState({ panel: "details" }, "")
+    history.pushState({ panel: "details" }, "")
 
     details.hidden = false
     detailsBackdrop.hidden = false
 
+    // 1. Populate static headers & teacher notes
     details.querySelector("#schedule-details-header").textContent = period.subject?.longname + " - " + period.subject?.name ?? "?"
 
     const badge = details.querySelector("#schedule-details-status")
     badge.textContent = period.isExam ? "Exam" : period.isChanged ? "Room Change" : ""
     badge.hidden = !period.isExam && !period.isChanged
 
-    // now that the grab-zone content (header/status) is set, its height is
-    // accurate, so start the sheet off-screen and slide it up to the peek position
-    setDetailsTranslate(window.innerHeight, false)
-    details.offsetHeight // force reflow before animating
-    requestAnimationFrame(() => snapDetailsTo("peek"))
+    const note = period.notes?.length > 0 ? period.notes : null
+    if (note) {
+        details.querySelector("#schedule-details-nfs-header").hidden = false
+        details.querySelector("#schedule-details-nfs").hidden = false
+        details.querySelector("#schedule-details-nfs").textContent = period.notes
+    } else {
+        details.querySelector("#schedule-details-nfs-header").hidden = true
+        details.querySelector("#schedule-details-nfs").hidden = true
+    }
 
-	const note = period.notes?.length > 0 ? period.notes : null
-	if (note) {
-		details.querySelector("#schedule-details-nfs-header").hidden = false
-		details.querySelector("#schedule-details-nfs").hidden = false
-		details.querySelector("#schedule-details-nfs").textContent = period.notes
-	} else {
-		details.querySelector("#schedule-details-nfs-header").hidden = true
-		details.querySelector("#schedule-details-nfs").hidden = true
-	}
+    // 2. Populate own notes
+    details.querySelector("#schedule-details-own-notes").value = customData.note?.length > 0 ? customData.note : ""
 
-	//note for self
-	details.querySelector("#schedule-details-own-notes").value = customData.note?.length > 0 ? customData.note : ""
-
-    //homework
+    // 3. Render homework items dynamically
     const hwList = details.querySelector("#schedule-details-hw-list")
     hwList.textContent = ""
 
@@ -315,6 +336,11 @@ async function openDetailsPanel(period, dateKey) {
             : completedHomework[hw.id] ?? hw.completed
         hwList.appendChild(createHomeworkItem(hw.text, isCompleted, hw.id, !isCustom))
     }
+
+    // 4. Now that DOM height is accurate, start sheet off-screen and animate up to peak
+    setDetailsTranslate(window.innerHeight, false)
+    details.offsetHeight // Force layout reflow so getDetailsPeekHeight calculates accurately
+    requestAnimationFrame(() => snapDetailsTo("peek"))
 }
 
 async function closeDetailsPanel() {
