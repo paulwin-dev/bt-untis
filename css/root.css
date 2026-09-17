@@ -7,7 +7,7 @@
     --green-bg: rgb(67, 216, 105);
 
     --border: #e2ddd8;
-    --border-dark: #e2ddd818;
+    --border-dark: #ffffff34;
 
     --text: rgb(0, 0, 0);
     --surface-text: rgb(255, 255, 255);
@@ -17,9 +17,9 @@
     --button: rgb(255, 80, 32);
     --button-hover: rgb(255, 139, 107);
 
-    --error: rgb(255, 84, 41);
-    --success: rgb(40, 200, 80);
-    --info: rgb(95, 152, 250);
+    --error: rgb(199, 32, 32);
+    --success: #7fd26c;
+    --info: rgb(49, 103, 197);
 
     --header-font: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
     --navbar-height: 55px;
@@ -37,13 +37,6 @@
         --surface-text: rgb(255, 255, 255);
         --surace-text-muted: rgb(160, 160, 160);
         --muted-text: rgb(160, 160, 160);
-
-        --button: rgb(255, 80, 32);
-        --button-hover: rgb(255, 139, 107);
-        
-        --error: rgb(255, 84, 41);
-        --success: rgb(40, 200, 80);
-        --info: rgb(95, 152, 250);
     }
 }
 

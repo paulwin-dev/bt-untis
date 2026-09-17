@@ -362,7 +362,7 @@ async function closeDetailsPanel() {
     if (notesText === "" && !customData?.note) return;
 
     await storage.putCustomPeriodData(customData.homework ?? [], notesText, dateKey, period.startTime)
-    notifications.notify("Saved new note.", "info")
+    notifications.notify("Saved note", "info")
 }
 
 async function updateStudentName() {
